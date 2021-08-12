@@ -1,0 +1,30 @@
+{
+  "name": "editor-adapter",
+  "version": "0.0.1",
+  "description": "A library to interact with in-browser JS editors like Ace, CodeMirror or Monaco",
+  "main": "index.js",
+  "scripts": {
+    "test": "test",
+    "build": "./node_modules/typescript/bin/tsc --target ES2020 index.ts && grep -vh '^import ' *.js | tee main.js && mv main.js index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glacambre/editor-adapter.git"
+  },
+  "keywords": [
+    "editor",
+    "ace",
+    "codemirror",
+    "monaco",
+    "webextension"
+  ],
+  "author": "glacambre",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/glacambre/editor-adapter/issues"
+  },
+  "homepage": "https://github.com/glacambre/editor-adapter#readme",
+  "dependencies": {
+    "typescript": "^4.3.5"
+  }
+}
