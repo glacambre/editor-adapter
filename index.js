@@ -132,7 +132,7 @@ export class CodeMirrorEditor extends AbstractEditor {
     setCursor(line, column) {
         return executeInPage(`(${ /* istanbul ignore next */(selec, l, c) => {
             const elem = document.querySelector(selec);
-            return elem.CodeMirror.getCursor(l - 1, c);
+            return elem.CodeMirror.setCursor({ line: l - 1, ch: c });
         }})(${JSON.stringify(computeSelector(this.elem))}, ${line}, ${column})`);
     }
 }
