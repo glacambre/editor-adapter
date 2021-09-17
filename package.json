@@ -1,6 +1,6 @@
 {
   "name": "editor-adapter",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A library to interact with in-browser JS editors like Ace, CodeMirror or Monaco",
   "main": "index.js",
   "scripts": {
