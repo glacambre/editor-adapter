@@ -1,23 +1,55 @@
-export class AbstractEditor {
+export class GenericAbstractEditor {
+    constructor(_e, _options) { }
+    ;
+    static matches(_) {
+        throw new Error("Matches function not overriden");
+    }
+    ;
 }
-export class AceEditor extends AbstractEditor {
-    constructor(e) {
-        super();
+/* istanbul ignore next */
+export class AceEditor extends GenericAbstractEditor {
+    constructor(e, _options) {
+        super(e, _options);
         // This function will be stringified and inserted in page context so we
         // can't instrument it.
         /* istanbul ignore next */
         this.getAce = (selec) => {
-            const elem = document.querySelector(selec);
-            const win_ace = window.ace;
-            if (win_ace !== undefined) {
-                return win_ace.edit(elem);
-            }
-            else if (Object.prototype.hasOwnProperty.call(elem, 'aceEditor')) {
-                return elem.aceEditor;
+        };
+        this.getContent = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+            return wrap(ace.getValue());
+        };
+        this.getCursor = async (selector, wrap, unwrap) => {
+            let position;
+            const elem = document.querySelector(selector);
+            const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+            if (ace.getCursorPosition !== undefined) {
+                position = ace.getCursorPosition();
             }
             else {
-                throw new Error("Couldn't find AceEditor instance");
+                position = ace.selection.cursor;
             }
+            return [wrap(position.row) + 1, wrap(position.column)];
+        };
+        this.getElement = () => {
+            return this.elem;
+        };
+        this.getLanguage = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+            return wrap(ace.session.$modeId).split("/").slice(-1)[0];
+        };
+        this.setContent = async (selector, wrap, unwrap, text) => {
+            const elem = document.querySelector(selector);
+            const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+            return wrap(ace.setValue(text, 1));
+        };
+        this.setCursor = async (selector, wrap, unwrap, line, column) => {
+            const elem = document.querySelector(selector);
+            const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+            const selection = ace.getSelection();
+            return wrap(selection.moveCursorTo(line - 1, column, false));
         };
         this.elem = e;
         // Get the topmost ace element
@@ -39,50 +71,37 @@ export class AceEditor extends AbstractEditor {
         }
         return false;
     }
-    getContent() {
-        return executeInPage(`(${ /* istanbul ignore next */(getAce, selec) => {
-            return getAce(selec).getValue();
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    getCursor() {
-        return executeInPage(`(${ /* istanbul ignore next */(getAce, selec) => {
-            let position;
-            const ace = getAce(selec);
-            if (ace.getCursorPosition !== undefined) {
-                position = ace.getCursorPosition();
-            }
-            else {
-                position = ace.selection.cursor;
-            }
-            return [position.row + 1, position.column];
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    getElement() {
-        return this.elem;
-    }
-    getLanguage() {
-        return executeInPage(`(${ /* istanbul ignore next */(getAce, selec) => {
-            const ace = getAce(selec);
-            return ace.session.$modeId.split("/").slice(-1)[0];
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    setContent(text) {
-        return executeInPage(`(${ /* istanbul ignore next */(getAce, selec, str) => {
-            return getAce(selec).setValue(str, 1);
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))}, ${JSON.stringify(text)})`);
-    }
-    setCursor(line, column) {
-        return executeInPage(`(${ /* istanbul ignore next */(getAce, selec, l, c) => {
-            const selection = getAce(selec).getSelection();
-            return selection.moveCursorTo(l - 1, c, false);
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))}, ${line}, ${column})`);
-    }
 }
-export class CodeMirrorEditor extends AbstractEditor {
-    constructor(e) {
-        super();
+/* istanbul ignore next */
+export class CodeMirrorEditor extends GenericAbstractEditor {
+    constructor(e, options) {
+        super(e, options);
+        this.getContent = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            return wrap(unwrap(elem).CodeMirror.getValue());
+        };
+        this.getCursor = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            const position = unwrap(elem).CodeMirror.getCursor();
+            return [wrap(position.line) + 1, wrap(position.ch)];
+        };
+        this.getElement = () => {
+            return this.elem;
+        };
+        this.getLanguage = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            return wrap(unwrap(elem).CodeMirror.getMode().name);
+        };
+        this.setContent = async (selector, wrap, unwrap, text) => {
+            const elem = document.querySelector(selector);
+            return wrap(unwrap(elem).CodeMirror.setValue(text));
+        };
+        this.setCursor = async (selector, wrap, unwrap, line, column) => {
+            const elem = document.querySelector(selector);
+            return wrap(unwrap(elem).CodeMirror.setCursor({ line: line - 1, ch: column }));
+        };
         this.elem = e;
-        // Get the topmost ace element
+        // Get the topmost CodeMirror element
         let parent = this.elem.parentElement;
         while (CodeMirrorEditor.matches(parent)) {
             this.elem = parent;
@@ -101,44 +120,42 @@ export class CodeMirrorEditor extends AbstractEditor {
         }
         return false;
     }
-    getContent() {
-        return executeInPage(`(${ /* istanbul ignore next */(selec) => {
-            const elem = document.querySelector(selec);
-            return elem.CodeMirror.getValue();
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    getCursor() {
-        return executeInPage(`(${ /* istanbul ignore next */(selec) => {
-            const elem = document.querySelector(selec);
-            const position = elem.CodeMirror.getCursor();
-            return [position.line + 1, position.ch];
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    getElement() {
-        return this.elem;
-    }
-    getLanguage() {
-        return executeInPage(`(${ /* istanbul ignore next */(selec) => {
-            const elem = document.querySelector(selec);
-            return elem.CodeMirror.getMode().name;
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    setContent(text) {
-        return executeInPage(`(${ /* istanbul ignore next */(selec, str) => {
-            const elem = document.querySelector(selec);
-            return elem.CodeMirror.setValue(str);
-        }})(${JSON.stringify(computeSelector(this.elem))}, ${JSON.stringify(text)})`);
-    }
-    setCursor(line, column) {
-        return executeInPage(`(${ /* istanbul ignore next */(selec, l, c) => {
-            const elem = document.querySelector(selec);
-            return elem.CodeMirror.setCursor({ line: l - 1, ch: c });
-        }})(${JSON.stringify(computeSelector(this.elem))}, ${line}, ${column})`);
-    }
 }
-export class MonacoEditor extends AbstractEditor {
-    constructor(e) {
-        super();
+/* istanbul ignore next */
+export class MonacoEditor extends GenericAbstractEditor {
+    constructor(e, options) {
+        super(e, options);
+        this.getContent = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            const uri = elem.getAttribute("data-uri");
+            const model = unwrap(window).monaco.editor.getModel(uri);
+            return wrap(model.getValue());
+        };
+        // It's impossible to get Monaco's cursor position:
+        // https://github.com/Microsoft/monaco-editor/issues/258
+        this.getCursor = async (selector, wrap, unwrap) => {
+            return [1, 0];
+        };
+        this.getElement = () => {
+            return this.elem;
+        };
+        this.getLanguage = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            const uri = elem.getAttribute("data-uri");
+            const model = unwrap(window).monaco.editor.getModel(uri);
+            return wrap(model.getModeId());
+        };
+        this.setContent = async (selector, wrap, unwrap, text) => {
+            const elem = document.querySelector(selector);
+            const uri = elem.getAttribute("data-uri");
+            const model = unwrap(window).monaco.editor.getModel(uri);
+            return wrap(model.setValue(text));
+        };
+        // It's impossible to set Monaco's cursor position:
+        // https://github.com/Microsoft/monaco-editor/issues/258
+        this.setCursor = async (_selector, _wrap, _unwrap, _line, _column) => {
+            return undefined;
+        };
         this.elem = e;
         // Find the monaco element that holds the data
         let parent = this.elem.parentElement;
@@ -160,161 +177,120 @@ export class MonacoEditor extends AbstractEditor {
         }
         return false;
     }
-    getContent() {
-        return executeInPage(`(${ /* istanbul ignore next */(selec) => {
-            const elem = document.querySelector(selec);
-            const uri = elem.getAttribute("data-uri");
-            const model = window.monaco.editor.getModel(uri);
-            return model.getValue();
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    // It's impossible to get Monaco's cursor position:
-    // https://github.com/Microsoft/monaco-editor/issues/258
-    getCursor() {
-        return Promise.resolve([1, 0]);
-    }
-    getElement() {
-        return this.elem;
-    }
-    getLanguage() {
-        return executeInPage(`(${ /* istanbul ignore next */(selec) => {
-            const elem = document.querySelector(selec);
-            const uri = elem.getAttribute("data-uri");
-            const model = window.monaco.editor.getModel(uri);
-            return model.getModeId();
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
-    }
-    setContent(text) {
-        return executeInPage(`(${ /* istanbul ignore next */(selec, str) => {
-            const elem = document.querySelector(selec);
-            const uri = elem.getAttribute("data-uri");
-            const model = window.monaco.editor.getModel(uri);
-            return model.setValue(str);
-        }})(${JSON.stringify(computeSelector(this.elem))}, ${JSON.stringify(text)})`);
-    }
-    // It's impossible to set Monaco's cursor position:
-    // https://github.com/Microsoft/monaco-editor/issues/258
-    setCursor(_line, _column) {
-        return Promise.resolve();
-    }
 }
 // TextareaEditor sort of works for contentEditable elements but there should
 // really be a contenteditable-specific editor.
-export class TextareaEditor extends AbstractEditor {
-    constructor(e, preferHTML = false) {
-        super();
-        this.preferHTML = preferHTML;
-        this.elem = e;
-    }
-    getContent() {
-        if (this.elem.value !== undefined) {
-            return Promise.resolve(this.elem.value);
-        }
-        if (this.preferHTML) {
-            return Promise.resolve(this.elem.innerHTML);
-        }
-        else {
-            return Promise.resolve(this.elem.innerText);
-        }
-    }
-    getCursor() {
-        return this.getContent().then(text => {
-            let line = 1;
-            let column = 0;
-            const selectionStart = this.elem.selectionStart !== undefined
-                ? this.elem.selectionStart
-                : 0;
-            // Sift through the text, counting columns and new lines
-            for (let cursor = 0; cursor < selectionStart; ++cursor) {
-                column += text.charCodeAt(cursor) < 0x7F ? 1 : 2;
-                if (text[cursor] === "\n") {
-                    line += 1;
-                    column = 0;
-                }
+/* istanbul ignore next */
+export class TextareaEditor {
+    constructor(e, options) {
+        this.getContent = async () => {
+            if (this.elem.value !== undefined) {
+                return Promise.resolve(this.elem.value);
             }
-            return [line, column];
-        });
-    }
-    getElement() {
-        return this.elem;
-    }
-    getLanguage() {
-        if (this.preferHTML) {
-            return Promise.resolve('html');
-        }
-        return Promise.resolve(undefined);
-    }
-    setContent(text) {
-        if (this.elem.value !== undefined) {
-            this.elem.value = text;
-        }
-        else {
-            if (this.preferHTML) {
-                this.elem.innerHTML = text;
+            if (this.options.preferHTML) {
+                return Promise.resolve(this.elem.innerHTML);
             }
             else {
-                this.elem.innerText = text;
+                return Promise.resolve(this.elem.innerText);
             }
-        }
-        return Promise.resolve();
-    }
-    setCursor(line, column) {
-        return this.getContent().then(text => {
-            let character = 0;
-            // Try to find the line the cursor should be put on
-            while (line > 1 && character < text.length) {
-                if (text[character] === "\n") {
-                    line -= 1;
+        };
+        this.getCursor = async () => {
+            return this.getContent().then(text => {
+                let line = 1;
+                let column = 0;
+                const selectionStart = this.elem.selectionStart !== undefined
+                    ? this.elem.selectionStart
+                    : 0;
+                // Sift through the text, counting columns and new lines
+                for (let cursor = 0; cursor < selectionStart; ++cursor) {
+                    column += text.charCodeAt(cursor) < 0x7F ? 1 : 2;
+                    if (text[cursor] === "\n") {
+                        line += 1;
+                        column = 0;
+                    }
                 }
-                character += 1;
+                return [line, column];
+            });
+        };
+        this.getElement = () => {
+            return this.elem;
+        };
+        this.getLanguage = async () => {
+            if (this.options.preferHTML) {
+                return Promise.resolve('html');
             }
-            // Try to find the character after which the cursor should be moved
-            // Note: we don't do column = columnn + character because column
-            // might be larger than actual line length and it's better to be on
-            // the right line but on the wrong column than on the wrong line
-            // and wrong column.
-            // Moreover, column is a number of UTF-8 bytes from the beginning
-            // of the line to the cursor. However, javascript uses UTF-16,
-            // which is 2 bytes per non-ascii character. So when we find a
-            // character that is more than 1 byte long, we have to remove that
-            // amount from column, but only two characters from CHARACTER!
-            while (column > 0 && character < text.length) {
-                // Can't happen, but better be safe than sorry
-                /* istanbul ignore next */
-                if (text[character] === "\n") {
-                    break;
-                }
-                const code = text.charCodeAt(character);
-                if (code <= 0x7f) {
-                    column -= 1;
-                }
-                else if (code <= 0x7ff) {
-                    column -= 2;
-                }
-                else if (code >= 0xd800 && code <= 0xdfff) {
-                    column -= 4;
-                    character++;
-                }
-                else if (code < 0xffff) {
-                    column -= 3;
+            return Promise.resolve(undefined);
+        };
+        this.setContent = async (text) => {
+            if (this.elem.value !== undefined) {
+                this.elem.value = text;
+            }
+            else {
+                if (this.options.preferHTML) {
+                    this.elem.innerHTML = text;
                 }
                 else {
-                    column -= 4;
+                    this.elem.innerText = text;
                 }
-                character += 1;
             }
-            if (this.elem.setSelectionRange !== undefined) {
-                this.elem.setSelectionRange(character, character);
-            }
-        });
+            return Promise.resolve();
+        };
+        this.setCursor = async (line, column) => {
+            return this.getContent().then(text => {
+                let character = 0;
+                // Try to find the line the cursor should be put on
+                while (line > 1 && character < text.length) {
+                    if (text[character] === "\n") {
+                        line -= 1;
+                    }
+                    character += 1;
+                }
+                // Try to find the character after which the cursor should be moved
+                // Note: we don't do column = columnn + character because column
+                // might be larger than actual line length and it's better to be on
+                // the right line but on the wrong column than on the wrong line
+                // and wrong column.
+                // Moreover, column is a number of UTF-8 bytes from the beginning
+                // of the line to the cursor. However, javascript uses UTF-16,
+                // which is 2 bytes per non-ascii character. So when we find a
+                // character that is more than 1 byte long, we have to remove that
+                // amount from column, but only two characters from CHARACTER!
+                while (column > 0 && character < text.length) {
+                    // Can't happen, but better be safe than sorry
+                    /* istanbul ignore next */
+                    if (text[character] === "\n") {
+                        break;
+                    }
+                    const code = text.charCodeAt(character);
+                    if (code <= 0x7f) {
+                        column -= 1;
+                    }
+                    else if (code <= 0x7ff) {
+                        column -= 2;
+                    }
+                    else if (code >= 0xd800 && code <= 0xdfff) {
+                        column -= 4;
+                        character++;
+                    }
+                    else if (code < 0xffff) {
+                        column -= 3;
+                    }
+                    else {
+                        column -= 4;
+                    }
+                    character += 1;
+                }
+                if (this.elem.setSelectionRange !== undefined) {
+                    this.elem.setSelectionRange(character, character);
+                }
+                return undefined;
+            });
+        };
+        this.options = options;
+        this.elem = e;
     }
-}
-export function getEditor(elem, { preferHTML }) {
-    switch (true) {
-        case AceEditor.matches(elem): return new AceEditor(elem);
-        case CodeMirrorEditor.matches(elem): return new CodeMirrorEditor(elem);
-        case MonacoEditor.matches(elem): return new MonacoEditor(elem);
-        default: return new TextareaEditor(elem, preferHTML);
+    static matches(_) {
+        return true;
     }
 }
 // Computes a unique selector for its argument.
@@ -342,12 +318,15 @@ export function computeSelector(element) {
 // Runs CODE in the page's context by setting up a custom event listener,
 // embedding a script element that runs the piece of code and emits its result
 // as an event.
+/* istanbul ignore next */
 export function executeInPage(code) {
     return new Promise((resolve, reject) => {
         const script = document.createElement("script");
         const eventId = `${Math.random()}`;
         script.innerHTML = `(async (evId) => {
             try {
+                let unwrap = x => x;
+                let wrap = x => x;
                 let result;
                 result = await ${code};
                 window.dispatchEvent(new CustomEvent(evId, {
@@ -371,4 +350,52 @@ export function executeInPage(code) {
         }, { once: true });
         document.head.appendChild(script);
     });
+}
+export function unwrap(x) {
+    if (window.wrappedJSObject) {
+        return x.wrappedJSObject;
+    }
+    return x;
+}
+export function wrap(x) {
+    if (window.XPCNativeWrapper) {
+        return window.XPCNativeWrapper(x);
+    }
+    return x;
+}
+;
+export function getEditor(elem, options) {
+    let editor;
+    for (let clazz of [AceEditor, CodeMirrorEditor, MonacoEditor]) {
+        if (clazz.matches(elem)) {
+            editor = clazz;
+            break;
+        }
+    }
+    if (editor === undefined) {
+        return new TextareaEditor(elem, options);
+    }
+    let ed = new editor(elem, options);
+    let result;
+    if (window.wrappedJSObject) {
+        result = new Proxy(ed, {
+            get: (target, prop) => (...args) => {
+                return target[prop](computeSelector(target.getElement()), wrap, unwrap, ...args);
+            }
+        });
+    }
+    else {
+        result = new Proxy(ed, {
+            get: (target, prop) => {
+                if (prop === "getElement") {
+                    return target[prop];
+                }
+                return (...args) => {
+                    /* istanbul ignore next */
+                    return executeInPage(`(${target[prop]})(${JSON.stringify(computeSelector(target.getElement()))}, x => x, x => x, ...${JSON.stringify(args)})`);
+                };
+            }
+        });
+    }
+    return result;
 }
