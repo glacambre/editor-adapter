@@ -1,27 +1,33 @@
-import { AbstractEditor } from "./AbstractEditor";
+import { AbstractEditor, AbstractEditorOptions, wrapper, unwrapper } from "./AbstractEditor";
 
 // TextareaEditor sort of works for contentEditable elements but there should
 // really be a contenteditable-specific editor.
-export class TextareaEditor extends AbstractEditor {
+/* istanbul ignore next */
+export class TextareaEditor implements AbstractEditor {
 
     private elem: HTMLElement;
-    constructor (e: HTMLElement, private preferHTML: boolean = false) {
-        super();
+    private options: AbstractEditorOptions;
+    constructor (e: HTMLElement, options: AbstractEditorOptions) {
+        this.options = options;
         this.elem = e;
     }
 
-    getContent () {
+    static matches (_: HTMLElement) {
+        return true;
+    }
+
+    getContent = async () => {
         if ((this.elem as any).value !== undefined) {
             return Promise.resolve((this.elem as any).value);
         }
-        if (this.preferHTML){
+        if (this.options.preferHTML){
             return Promise.resolve(this.elem.innerHTML);
         } else {
             return Promise.resolve(this.elem.innerText);
         }
     }
 
-    getCursor () {
+    getCursor = async () => {
         return this.getContent().then(text => {
             let line = 1;
             let column = 0;
@@ -40,23 +46,23 @@ export class TextareaEditor extends AbstractEditor {
         });
     }
 
-    getElement () {
+    getElement = () => {
         return this.elem;
     }
 
-    getLanguage () {
-        if (this.preferHTML) {
+    getLanguage = async () => {
+        if (this.options.preferHTML) {
             return Promise.resolve('html');
         }
 
         return Promise.resolve(undefined);
     }
 
-    setContent (text: string) {
+    setContent = async (text: string) => {
         if ((this.elem as any).value !== undefined) {
             (this.elem as any).value = text;
         } else {
-            if (this.preferHTML){
+            if (this.options.preferHTML){
                 this.elem.innerHTML = text;
             } else {
                 this.elem.innerText = text;
@@ -65,7 +71,7 @@ export class TextareaEditor extends AbstractEditor {
         return Promise.resolve();
     }
 
-    setCursor (line: number, column: number) {
+    setCursor = async (line: number, column: number) => {
         return this.getContent().then(text => {
             let character = 0;
             // Try to find the line the cursor should be put on
@@ -108,6 +114,7 @@ export class TextareaEditor extends AbstractEditor {
             if ((this.elem as any).setSelectionRange !== undefined) {
                 (this.elem as any).setSelectionRange(character, character);
             }
+            return undefined;
         });
     }
 }

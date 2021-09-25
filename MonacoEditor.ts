@@ -1,7 +1,7 @@
-import { computeSelector, executeInPage } from "./utils";
-import { AbstractEditor } from "./AbstractEditor";
+import { GenericAbstractEditor, AbstractEditorOptions, wrapper, unwrapper } from "./AbstractEditor";
 
-export class MonacoEditor extends AbstractEditor {
+/* istanbul ignore next */
+export class MonacoEditor extends GenericAbstractEditor {
 
     static matches (e: HTMLElement) {
         let parent = e;
@@ -17,8 +17,8 @@ export class MonacoEditor extends AbstractEditor {
     }
 
     private elem: HTMLElement;
-    constructor (e: HTMLElement) {
-        super();
+    constructor(e: HTMLElement, options: AbstractEditorOptions)  {
+        super(e, options);
         this.elem = e;
         // Find the monaco element that holds the data
         let parent = this.elem.parentElement;
@@ -29,47 +29,41 @@ export class MonacoEditor extends AbstractEditor {
         }
     }
 
-    getContent () {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
-            const elem = document.querySelector(selec) as any;
-            const uri = elem.getAttribute("data-uri");
-            const model = (window as any).monaco.editor.getModel(uri);
-            return model.getValue();
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
+    getContent = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        const elem = document.querySelector(selector);
+        const uri = elem.getAttribute("data-uri");
+        const model = unwrap(window).monaco.editor.getModel(uri);
+        return wrap(model.getValue());
     }
 
     // It's impossible to get Monaco's cursor position:
     // https://github.com/Microsoft/monaco-editor/issues/258
-    getCursor () {
-        return Promise.resolve([1, 0] as [number, number]);
+    getCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        return [1, 0] as [number, number];
     }
 
-    getElement () {
+    getElement = () => {
         return this.elem;
     }
 
-    getLanguage () {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
-            const elem = document.querySelector(selec) as any;
-            const uri = elem.getAttribute("data-uri");
-            const model = (window as any).monaco.editor.getModel(uri);
-            return model.getModeId();
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
+    getLanguage = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        const elem = document.querySelector(selector);
+        const uri = elem.getAttribute("data-uri");
+        const model = unwrap(window).monaco.editor.getModel(uri);
+        return wrap(model.getModeId());
     }
 
-    setContent (text: string) {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string, str: string) => {
-            const elem = document.querySelector(selec) as any;
-            const uri = elem.getAttribute("data-uri");
-            const model = (window as any).monaco.editor.getModel(uri);
-            return model.setValue(str);
-        }})(${JSON.stringify(computeSelector(this.elem))}, ${JSON.stringify(text)})`);
+    setContent = async (selector: string, wrap: wrapper, unwrap: unwrapper, text: string) => {
+        const elem = document.querySelector(selector) as any;
+        const uri = elem.getAttribute("data-uri");
+        const model = unwrap(window).monaco.editor.getModel(uri);
+        return wrap(model.setValue(text));
     }
 
     // It's impossible to set Monaco's cursor position:
     // https://github.com/Microsoft/monaco-editor/issues/258
-    setCursor (_line: number, _column: number) {
-        return Promise.resolve();
+    setCursor = async (_selector: string, _wrap: wrapper, _unwrap: unwrapper, _line: number, _column: number): Promise<undefined> => {
+        return undefined;
     }
 
 }

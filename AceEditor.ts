@@ -1,7 +1,7 @@
-import { executeInPage, computeSelector } from "./utils";
-import { AbstractEditor } from "./AbstractEditor";
+import { GenericAbstractEditor, AbstractEditorOptions, wrapper, unwrapper } from "./AbstractEditor";
 
-export class AceEditor extends AbstractEditor {
+/* istanbul ignore next */
+export class AceEditor extends GenericAbstractEditor {
 
     static matches (e: HTMLElement) {
         let parent = e;
@@ -17,8 +17,8 @@ export class AceEditor extends AbstractEditor {
     }
 
     private elem: HTMLElement;
-    constructor (e: HTMLElement) {
-        super();
+    constructor(e: HTMLElement, _options: AbstractEditorOptions) {
+        super(e, _options);
         this.elem = e;
         // Get the topmost ace element
         let parent = this.elem.parentElement;
@@ -32,58 +32,46 @@ export class AceEditor extends AbstractEditor {
     // can't instrument it.
     /* istanbul ignore next */
     private getAce = (selec: string) => {
-        const elem = document.querySelector(selec) as any;
-        const win_ace = (window as any).ace;
-        if (win_ace !== undefined) {
-            return win_ace.edit(elem);
-        } else if (Object.prototype.hasOwnProperty.call(elem, 'aceEditor')) {
-            return elem.aceEditor;
-        } else {
-            throw new Error("Couldn't find AceEditor instance");
-        }
     };
 
-    getContent () {
-        return executeInPage(`(${/* istanbul ignore next */ (getAce: any, selec: string) => {
-            return getAce(selec).getValue();
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))})`);
+    getContent = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        const elem = document.querySelector(selector) as any;
+        const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+        return wrap(ace.getValue());
     }
 
-    getCursor () {
-        return executeInPage(`(${/* istanbul ignore next */ (getAce: any, selec: string) => {
-            let position;
-            const ace = getAce(selec);
-            if (ace.getCursorPosition !== undefined) {
-                position = ace.getCursorPosition();
-            } else {
-                position = ace.selection.cursor;
-            }
-            return [position.row + 1, position.column];
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))})`);
+    getCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        let position;
+        const elem = document.querySelector(selector) as any;
+        const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+        if (ace.getCursorPosition !== undefined) {
+            position = ace.getCursorPosition();
+        } else {
+            position = ace.selection.cursor;
+        }
+        return [wrap(position.row) + 1, wrap(position.column)] as [number, number];
     }
 
-    getElement () {
+    getElement = () => {
         return this.elem;
     }
 
-    getLanguage () {
-        return executeInPage(`(${/* istanbul ignore next */ (getAce: any, selec: string) => {
-            const ace = getAce(selec);
-            return ace.session.$modeId.split("/").slice(-1)[0];
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))})`);
+    getLanguage = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        const elem = document.querySelector(selector) as any;
+        const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+        return wrap(ace.session.$modeId).split("/").slice(-1)[0];
     }
 
-    setContent (text: string) {
-        return executeInPage(`(${/* istanbul ignore next */ (getAce: any, selec: string, str: string) => {
-            return getAce(selec).setValue(str, 1);
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))}, ${JSON.stringify(text)})`);
+    setContent = async (selector: string, wrap: wrapper, unwrap: unwrapper, text: string) => {
+        const elem = document.querySelector(selector) as any;
+        const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+        return wrap(ace.setValue(text, 1));
     }
 
-    setCursor (line: number, column: number) {
-        return executeInPage(`(${/* istanbul ignore next */ (getAce: any, selec: string, l: number, c: number) => {
-            const selection = getAce(selec).getSelection();
-            return selection.moveCursorTo(l - 1, c, false);
-        }})(${this.getAce}, ${JSON.stringify(computeSelector(this.elem))}, ${line}, ${column})`);
+    setCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper, line: number, column: number) => {
+        const elem = document.querySelector(selector) as any;
+        const ace = elem.aceEditor || unwrap(window).ace.edit(elem);
+        const selection = ace.getSelection();
+        return wrap(selection.moveCursorTo(line - 1, column, false));
     }
-
 }

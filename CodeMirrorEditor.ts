@@ -1,7 +1,7 @@
-import { computeSelector, executeInPage } from "./utils";
-import { AbstractEditor } from "./AbstractEditor";
+import { GenericAbstractEditor, AbstractEditorOptions, wrapper, unwrapper } from "./AbstractEditor";
 
-export class CodeMirrorEditor extends AbstractEditor {
+/* istanbul ignore next */
+export class CodeMirrorEditor extends GenericAbstractEditor {
 
     static matches (e: HTMLElement) {
         let parent = e;
@@ -17,10 +17,10 @@ export class CodeMirrorEditor extends AbstractEditor {
     }
 
     private elem: HTMLElement;
-    constructor (e: HTMLElement) {
-        super();
+    constructor (e: HTMLElement, options: AbstractEditorOptions) {
+        super(e, options);
         this.elem = e;
-        // Get the topmost ace element
+        // Get the topmost CodeMirror element
         let parent = this.elem.parentElement;
         while (CodeMirrorEditor.matches(parent)) {
             this.elem = parent;
@@ -28,43 +28,33 @@ export class CodeMirrorEditor extends AbstractEditor {
         }
     }
 
-    getContent () {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
-            const elem = document.querySelector(selec) as any;
-            return elem.CodeMirror.getValue();
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
+    getContent = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        const elem = document.querySelector(selector);
+        return wrap(unwrap(elem).CodeMirror.getValue());
     }
 
-    getCursor () {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
-            const elem = document.querySelector(selec) as any;
-            const position = elem.CodeMirror.getCursor();
-            return [position.line + 1, position.ch];
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
+    getCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        const elem = document.querySelector(selector) as any;
+        const position = unwrap(elem).CodeMirror.getCursor();
+        return [wrap(position.line) + 1, wrap(position.ch)] as [number, number];
     }
 
-    getElement () {
+    getElement = () => {
         return this.elem;
     }
 
-    getLanguage () {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string) => {
-            const elem = document.querySelector(selec) as any;
-            return elem.CodeMirror.getMode().name;
-        }})(${JSON.stringify(computeSelector(this.elem))})`);
+    getLanguage = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
+        const elem = document.querySelector(selector);
+        return wrap(unwrap(elem).CodeMirror.getMode().name);
     }
 
-    setContent (text: string) {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string, str: string) => {
-            const elem = document.querySelector(selec) as any;
-            return elem.CodeMirror.setValue(str);
-        }})(${JSON.stringify(computeSelector(this.elem))}, ${JSON.stringify(text)})`);
+    setContent = async (selector: string, wrap: wrapper, unwrap: unwrapper, text: string) => {
+        const elem = document.querySelector(selector) as any;
+        return wrap(unwrap(elem).CodeMirror.setValue(text));
     }
 
-    setCursor (line: number, column: number) {
-        return executeInPage(`(${/* istanbul ignore next */ (selec: string, l: number, c: number) => {
-            const elem = document.querySelector(selec) as any;
-            return elem.CodeMirror.setCursor({line: l - 1, ch: c });
-        }})(${JSON.stringify(computeSelector(this.elem))}, ${line}, ${column})`);
+    setCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper, line: number, column: number) => {
+        const elem = document.querySelector(selector) as any;
+        return wrap(unwrap(elem).CodeMirror.setCursor({line: line - 1, ch: column }));
     }
 }
