@@ -73,6 +73,59 @@ export class AceEditor extends GenericAbstractEditor {
     }
 }
 /* istanbul ignore next */
+export class CodeMirror6Editor extends GenericAbstractEditor {
+    constructor(e, options) {
+        super(e, options);
+        this.getContent = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            return wrap(unwrap(elem).cmView.view.state.doc.toString());
+        };
+        this.getCursor = async (selector, wrap, unwrap) => {
+            const elem = document.querySelector(selector);
+            const position = unwrap(elem).cmView.view.state.selection.main.head;
+            return [wrap(position.line), wrap(position.ch)];
+        };
+        this.getElement = () => {
+            return this.elem;
+        };
+        this.getLanguage = async (selector, wrap, unwrap) => {
+            return Promise.resolve(undefined);
+        };
+        this.setContent = async (selector, wrap, unwrap, text) => {
+            const elem = unwrap(document.querySelector(selector));
+            let length = elem.cmView.view.state.doc.length;
+            return wrap(elem.cmView.view.dispatch({ changes: { from: 0, to: length, insert: text } }));
+        };
+        this.setCursor = async (selector, wrap, unwrap, line, column) => {
+            const elem = unwrap(document.querySelector(selector));
+            return wrap(elem.vmView.view.dispatch({
+                selection: {
+                    anchor: elem.cmView.view.doc.line(line) + column
+                }
+            }));
+        };
+        this.elem = e;
+        // Get the topmost CodeMirror element
+        let parent = this.elem.parentElement;
+        while (CodeMirror6Editor.matches(parent)) {
+            this.elem = parent;
+            parent = parent.parentElement;
+        }
+    }
+    static matches(e) {
+        let parent = e;
+        for (let i = 0; i < 3; ++i) {
+            if (parent !== undefined && parent !== null) {
+                if ((/^(.* )?cm-content/gi).test(parent.className)) {
+                    return true;
+                }
+                parent = parent.parentElement;
+            }
+        }
+        return false;
+    }
+}
+/* istanbul ignore next */
 export class CodeMirrorEditor extends GenericAbstractEditor {
     constructor(e, options) {
         super(e, options);
@@ -366,7 +419,7 @@ export function wrap(x) {
 ;
 export function getEditor(elem, options) {
     let editor;
-    for (let clazz of [AceEditor, CodeMirrorEditor, MonacoEditor]) {
+    for (let clazz of [AceEditor, CodeMirrorEditor, CodeMirror6Editor, MonacoEditor]) {
         if (clazz.matches(elem)) {
             editor = clazz;
             break;

@@ -1,6 +1,7 @@
 import { AbstractEditor, GenericAbstractEditor, wrapper, unwrapper } from "./AbstractEditor";
 import { AceEditor } from "./AceEditor";
 import { CodeMirrorEditor } from "./CodeMirrorEditor";
+import { CodeMirror6Editor } from "./CodeMirror6Editor";
 import { MonacoEditor } from "./MonacoEditor";
 import { TextareaEditor } from "./TextareaEditor";
 
@@ -79,7 +80,7 @@ export function wrap(x: any) {
 
 export function getEditor(elem: HTMLElement, options: { preferHTML?: boolean }): AbstractEditor {
     let editor : typeof GenericAbstractEditor;
-    for (let clazz of [AceEditor, CodeMirrorEditor, MonacoEditor]) {
+    for (let clazz of [AceEditor, CodeMirrorEditor, CodeMirror6Editor, MonacoEditor]) {
         if (clazz.matches(elem)) {
             editor = clazz;
             break;
