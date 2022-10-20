@@ -417,9 +417,15 @@ export function wrap(x) {
     return x;
 }
 ;
+/* WARNING: codeMirror6 only works in chrome based browsers for now. Leave it
+ * to false or undefined in Firefox. */
 export function getEditor(elem, options) {
     let editor;
-    for (let clazz of [AceEditor, CodeMirrorEditor, CodeMirror6Editor, MonacoEditor]) {
+    let classes = [AceEditor, CodeMirrorEditor, MonacoEditor];
+    if (options.codeMirror6Enabled) {
+        classes.push(CodeMirror6Editor);
+    }
+    for (let clazz of classes) {
         if (clazz.matches(elem)) {
             editor = clazz;
             break;

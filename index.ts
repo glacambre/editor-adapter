@@ -78,9 +78,15 @@ export function wrap(x: any) {
     return x
 };
 
-export function getEditor(elem: HTMLElement, options: { preferHTML?: boolean }): AbstractEditor {
+/* WARNING: codeMirror6 only works in chrome based browsers for now. Leave it
+ * to false or undefined in Firefox. */
+export function getEditor(elem: HTMLElement, options: { preferHTML?: boolean, codeMirror6Enabled?: boolean }): AbstractEditor {
     let editor : typeof GenericAbstractEditor;
-    for (let clazz of [AceEditor, CodeMirrorEditor, CodeMirror6Editor, MonacoEditor]) {
+    let classes : (typeof GenericAbstractEditor)[] = [AceEditor, CodeMirrorEditor, MonacoEditor];
+    if (options.codeMirror6Enabled) {
+        classes.push(CodeMirror6Editor);
+    }
+    for (let clazz of classes) {
         if (clazz.matches(elem)) {
             editor = clazz;
             break;
