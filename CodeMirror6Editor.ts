@@ -45,7 +45,7 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
 
     getLanguage = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
 	const elem = document.querySelector(selector);
-	return wrap(unwrap(elem).dataSet.language);
+	return wrap(unwrap(elem).dataset.language);
     }
 
     setContent = async (selector: string, wrap: wrapper, unwrap: unwrapper, text: string) => {
