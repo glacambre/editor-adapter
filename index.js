@@ -89,7 +89,8 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
             return this.elem;
         };
         this.getLanguage = async (selector, wrap, unwrap) => {
-            return Promise.resolve(undefined);
+            const elem = document.querySelector(selector);
+            return wrap(unwrap(elem).dataset.language);
         };
         this.setContent = async (selector, wrap, unwrap, text) => {
             const elem = unwrap(document.querySelector(selector));
