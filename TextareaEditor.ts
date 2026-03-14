@@ -16,6 +16,28 @@ export class TextareaEditor implements AbstractEditor {
         return true;
     }
 
+    private maybeTriggerUpdateEvents(update) {
+        if (this.options.triggerUpdateEvents) {
+            this.elem.focus();
+            this.elem.dispatchEvent(new FocusEvent("focus", {bubbles: false, cancelable: false}));
+            this.elem.dispatchEvent(new FocusEvent("focusin", {bubbles: true, cancelable: false}));
+
+            this.elem.dispatchEvent(new KeyboardEvent("keydown", {bubbles: true, cancelable: false, ctrlKey: true}));
+            this.elem.dispatchEvent(new InputEvent("beforeinput", {bubbles: true, cancelable: false}));
+            this.elem.dispatchEvent(new KeyboardEvent("keypress", {bubbles: true, cancelable: false, ctrlKey: true}));
+        }
+
+        let result = update();
+
+        if (this.options.triggerUpdateEvents) {
+            this.elem.dispatchEvent(new Event("input", {bubbles: true, cancelable: false}));
+            this.elem.dispatchEvent(new KeyboardEvent("keyup", {bubbles: true, cancelable: false, ctrlKey: true}));
+            this.elem.dispatchEvent(new Event("change", {bubbles: true, cancelable: false}));
+        }
+
+        return result;
+    }
+
     getContent = async () => {
         if ((this.elem as any).value !== undefined) {
             return Promise.resolve((this.elem as any).value);
@@ -59,15 +81,17 @@ export class TextareaEditor implements AbstractEditor {
     }
 
     setContent = async (text: string) => {
-        if ((this.elem as any).value !== undefined) {
-            (this.elem as any).value = text;
-        } else {
-            if (this.options.preferHTML){
-                this.elem.innerHTML = text;
+        this.maybeTriggerUpdateEvents(() => {
+            if ((this.elem as any).value !== undefined) {
+                (this.elem as any).value = text;
             } else {
-                this.elem.innerText = text;
+                if (this.options.preferHTML){
+                    this.elem.innerHTML = text;
+                } else {
+                    this.elem.innerText = text;
+                }
             }
-        }
+        })
         return Promise.resolve();
     }
 
