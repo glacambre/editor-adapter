@@ -276,17 +276,19 @@ export class TextareaEditor {
             return Promise.resolve(undefined);
         };
         this.setContent = async (text) => {
-            if (this.elem.value !== undefined) {
-                this.elem.value = text;
-            }
-            else {
-                if (this.options.preferHTML) {
-                    this.elem.innerHTML = text;
+            this.maybeTriggerUpdateEvents(() => {
+                if (this.elem.value !== undefined) {
+                    this.elem.value = text;
                 }
                 else {
-                    this.elem.innerText = text;
+                    if (this.options.preferHTML) {
+                        this.elem.innerHTML = text;
+                    }
+                    else {
+                        this.elem.innerText = text;
+                    }
                 }
-            }
+            });
             return Promise.resolve();
         };
         this.setCursor = async (line, column) => {
@@ -345,6 +347,23 @@ export class TextareaEditor {
     }
     static matches(_) {
         return true;
+    }
+    maybeTriggerUpdateEvents(update) {
+        if (this.options.triggerUpdateEvents) {
+            this.elem.focus();
+            this.elem.dispatchEvent(new FocusEvent("focus", { bubbles: false, cancelable: false }));
+            this.elem.dispatchEvent(new FocusEvent("focusin", { bubbles: true, cancelable: false }));
+            this.elem.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, cancelable: false, ctrlKey: true }));
+            this.elem.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: false }));
+            this.elem.dispatchEvent(new KeyboardEvent("keypress", { bubbles: true, cancelable: false, ctrlKey: true }));
+        }
+        let result = update();
+        if (this.options.triggerUpdateEvents) {
+            this.elem.dispatchEvent(new Event("input", { bubbles: true, cancelable: false }));
+            this.elem.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true, cancelable: false, ctrlKey: true }));
+            this.elem.dispatchEvent(new Event("change", { bubbles: true, cancelable: false }));
+        }
+        return result;
     }
 }
 // Computes a unique selector for its argument.
@@ -418,11 +437,23 @@ export function wrap(x) {
     return x;
 }
 ;
-/* WARNING: codeMirror6 only works in chrome based browsers for now. Leave it
- * to false or undefined in Firefox. */
+/* Get an object that enables interacting with a text editor's content.
+ *
+ * @param elem: The element whose contents should be interracted with.
+ * @param options:
+ *  - preferHTML: True when you need to interract with the editor's HTML, false
+ *    otherwise. Useful for e.g. contenteditable elements. Defaults to false.
+ *  - codeMirror6Enabled: Whether CodeMirror6 should be considered. Only
+ *    supported on Chrome, do not set to true on other platforms. Defaults to
+ *    false.
+ *  - triggerUpdateEvents: Whether key/change/input events should be triggered
+ *    on the elements. Useful to work around badly written TextAreas. Defaults
+ *    to true.
+ */
 export function getEditor(elem, options) {
     let editor;
     let classes = [AceEditor, CodeMirrorEditor, MonacoEditor];
+    options.triggerUpdateEvents = (!("triggerUpdateEvents" in options)) || options.triggerUpdateEvents;
     if (options.codeMirror6Enabled) {
         classes.push(CodeMirror6Editor);
     }

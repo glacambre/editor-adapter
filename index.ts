@@ -78,11 +78,23 @@ export function wrap(x: any) {
     return x
 };
 
-/* WARNING: codeMirror6 only works in chrome based browsers for now. Leave it
- * to false or undefined in Firefox. */
-export function getEditor(elem: HTMLElement, options: { preferHTML?: boolean, codeMirror6Enabled?: boolean }): AbstractEditor {
+/* Get an object that enables interacting with a text editor's content.
+ *
+ * @param elem: The element whose contents should be interracted with.
+ * @param options:
+ *  - preferHTML: True when you need to interract with the editor's HTML, false
+ *    otherwise. Useful for e.g. contenteditable elements. Defaults to false.
+ *  - codeMirror6Enabled: Whether CodeMirror6 should be considered. Only
+ *    supported on Chrome, do not set to true on other platforms. Defaults to
+ *    false.
+ *  - triggerUpdateEvents: Whether key/change/input events should be triggered
+ *    on the elements. Useful to work around badly written TextAreas. Defaults
+ *    to true.
+ */
+export function getEditor(elem: HTMLElement, options: { preferHTML?: boolean, codeMirror6Enabled?: boolean, triggerUpdateEvents?: boolean }): AbstractEditor {
     let editor : typeof GenericAbstractEditor;
     let classes : (typeof GenericAbstractEditor)[] = [AceEditor, CodeMirrorEditor, MonacoEditor];
+    options.triggerUpdateEvents = (!("triggerUpdateEvents" in options)) || options.triggerUpdateEvents;
     if (options.codeMirror6Enabled) {
         classes.push(CodeMirror6Editor);
     }

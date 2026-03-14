@@ -1,4 +1,4 @@
-export type AbstractEditorOptions = { preferHTML?: boolean };
+export type AbstractEditorOptions = { preferHTML?: boolean, triggerUpdateEvents?: boolean };
 
 export type wrapper = (x: any) => any;
 export type unwrapper = (x: any) => any;
