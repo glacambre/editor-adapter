@@ -11,12 +11,12 @@ export class GenericAbstractEditor {
     public static matches (_: HTMLElement): boolean {
         throw new Error("Matches function not overriden");
     };
-    getElement: () => HTMLElement;
-    getContent: D<() => Promise<string>>;
-    getLanguage: D<() => Promise<string | undefined>>;
-    getCursor: D<() => Promise<[number, number]>>;
-    setContent: D<(s: string) => Promise<void>>;
-    setCursor: D<(line: number, column: number) => Promise<undefined>>;
+    declare getElement: () => HTMLElement;
+    declare getContent: D<() => Promise<string>>;
+    declare getLanguage: D<() => Promise<string | undefined>>;
+    declare getCursor: D<() => Promise<[number, number]>>;
+    declare setContent: D<(s: string) => Promise<void>>;
+    declare setCursor: D<(line: number, column: number) => Promise<undefined>>;
 }
 
 type Unargified<T> = T extends (s: string, w: wrapper, u: unwrapper, ...args: infer U) => any ? (...args: U) => ReturnType<T> : never;

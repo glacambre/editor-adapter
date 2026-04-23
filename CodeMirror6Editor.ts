@@ -4,7 +4,7 @@ import { GenericAbstractEditor, AbstractEditorOptions, wrapper, unwrapper } from
 export class CodeMirror6Editor extends GenericAbstractEditor {
 
     static matches (e: HTMLElement) {
-        let parent = e;
+        let parent: HTMLElement | null = e;
         for (let i = 0; i < 3; ++i) {
             if (parent !== undefined && parent !== null) {
                 if ((/^(.* )?cm-content/gi).test(parent.className)) {
@@ -21,8 +21,8 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
         super(e, options);
         this.elem = e;
         // Get the topmost CodeMirror element
-        let parent = this.elem.parentElement;
-        while (CodeMirror6Editor.matches(parent)) {
+        let parent: HTMLElement | null = this.elem.parentElement;
+        while (parent !== null && CodeMirror6Editor.matches(parent)) {
             this.elem = parent;
             parent = parent.parentElement;
         }

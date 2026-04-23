@@ -1,6 +1,6 @@
 {
   "name": "editor-adapter",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A library to interact with in-browser JS editors like Ace, CodeMirror or Monaco",
   "main": "index.js",
   "scripts": {
@@ -25,6 +25,6 @@
   },
   "homepage": "https://github.com/glacambre/editor-adapter#readme",
   "dependencies": {
-    "typescript": "^4.3.5"
+    "typescript": "^6.0.3"
   }
 }

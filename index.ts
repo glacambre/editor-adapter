@@ -54,7 +54,7 @@ export function executeInPage(code: string): Promise<any> {
             }
         })(${JSON.stringify(eventId)})`;
         window.addEventListener(eventId, ({ detail }: any) => {
-            script.parentNode.removeChild(script);
+            script.parentNode?.removeChild(script);
             if (detail.success) {
                 return resolve(detail.result);
             }
@@ -92,7 +92,7 @@ export function wrap(x: any) {
  *    to true.
  */
 export function getEditor(elem: HTMLElement, options: { preferHTML?: boolean, codeMirror6Enabled?: boolean, triggerUpdateEvents?: boolean }): AbstractEditor {
-    let editor : typeof GenericAbstractEditor;
+    let editor: typeof GenericAbstractEditor | undefined;
     let classes : (typeof GenericAbstractEditor)[] = [AceEditor, CodeMirrorEditor, MonacoEditor];
     options.triggerUpdateEvents = (!("triggerUpdateEvents" in options)) || options.triggerUpdateEvents;
     if (options.codeMirror6Enabled) {

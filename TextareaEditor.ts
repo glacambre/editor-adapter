@@ -16,7 +16,7 @@ export class TextareaEditor implements AbstractEditor {
         return true;
     }
 
-    private maybeTriggerUpdateEvents(update) {
+    private maybeTriggerUpdateEvents(update: () => any) {
         if (this.options.triggerUpdateEvents) {
             this.elem.focus();
             this.elem.dispatchEvent(new FocusEvent("focus", {bubbles: false, cancelable: false}));

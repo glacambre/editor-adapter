@@ -8,6 +8,18 @@ export class GenericAbstractEditor {
 }
 /* istanbul ignore next */
 export class AceEditor extends GenericAbstractEditor {
+    static matches(e) {
+        let parent = e;
+        for (let i = 0; i < 3; ++i) {
+            if (parent !== undefined && parent !== null) {
+                if ((/ace_editor/gi).test(parent.className)) {
+                    return true;
+                }
+                parent = parent.parentElement;
+            }
+        }
+        return false;
+    }
     constructor(e, _options) {
         super(e, _options);
         // This function will be stringified and inserted in page context so we
@@ -54,16 +66,19 @@ export class AceEditor extends GenericAbstractEditor {
         this.elem = e;
         // Get the topmost ace element
         let parent = this.elem.parentElement;
-        while (AceEditor.matches(parent)) {
+        while (parent !== null && AceEditor.matches(parent)) {
             this.elem = parent;
             parent = parent.parentElement;
         }
     }
+}
+/* istanbul ignore next */
+export class CodeMirror6Editor extends GenericAbstractEditor {
     static matches(e) {
         let parent = e;
         for (let i = 0; i < 3; ++i) {
             if (parent !== undefined && parent !== null) {
-                if ((/ace_editor/gi).test(parent.className)) {
+                if ((/^(.* )?cm-content/gi).test(parent.className)) {
                     return true;
                 }
                 parent = parent.parentElement;
@@ -71,9 +86,6 @@ export class AceEditor extends GenericAbstractEditor {
         }
         return false;
     }
-}
-/* istanbul ignore next */
-export class CodeMirror6Editor extends GenericAbstractEditor {
     constructor(e, options) {
         super(e, options);
         this.getContent = async (selector, wrap, unwrap) => {
@@ -108,16 +120,19 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
         this.elem = e;
         // Get the topmost CodeMirror element
         let parent = this.elem.parentElement;
-        while (CodeMirror6Editor.matches(parent)) {
+        while (parent !== null && CodeMirror6Editor.matches(parent)) {
             this.elem = parent;
             parent = parent.parentElement;
         }
     }
+}
+/* istanbul ignore next */
+export class CodeMirrorEditor extends GenericAbstractEditor {
     static matches(e) {
         let parent = e;
         for (let i = 0; i < 3; ++i) {
             if (parent !== undefined && parent !== null) {
-                if ((/^(.* )?cm-content/gi).test(parent.className)) {
+                if ((/^(.* )?CodeMirror/gi).test(parent.className)) {
                     return true;
                 }
                 parent = parent.parentElement;
@@ -125,9 +140,6 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
         }
         return false;
     }
-}
-/* istanbul ignore next */
-export class CodeMirrorEditor extends GenericAbstractEditor {
     constructor(e, options) {
         super(e, options);
         this.getContent = async (selector, wrap, unwrap) => {
@@ -157,16 +169,19 @@ export class CodeMirrorEditor extends GenericAbstractEditor {
         this.elem = e;
         // Get the topmost CodeMirror element
         let parent = this.elem.parentElement;
-        while (CodeMirrorEditor.matches(parent)) {
+        while (parent !== null && CodeMirrorEditor.matches(parent)) {
             this.elem = parent;
             parent = parent.parentElement;
         }
     }
+}
+/* istanbul ignore next */
+export class MonacoEditor extends GenericAbstractEditor {
     static matches(e) {
         let parent = e;
-        for (let i = 0; i < 3; ++i) {
+        for (let i = 0; i < 4; ++i) {
             if (parent !== undefined && parent !== null) {
-                if ((/^(.* )?CodeMirror/gi).test(parent.className)) {
+                if ((/monaco-editor/gi).test(parent.className)) {
                     return true;
                 }
                 parent = parent.parentElement;
@@ -174,9 +189,6 @@ export class CodeMirrorEditor extends GenericAbstractEditor {
         }
         return false;
     }
-}
-/* istanbul ignore next */
-export class MonacoEditor extends GenericAbstractEditor {
     constructor(e, options) {
         super(e, options);
         this.getContent = async (selector, wrap, unwrap) => {
@@ -214,22 +226,13 @@ export class MonacoEditor extends GenericAbstractEditor {
         // Find the monaco element that holds the data
         let parent = this.elem.parentElement;
         while (!(this.elem.className.match(/monaco-editor/gi)
-            && this.elem.getAttribute("data-uri").match("file://|inmemory://|gitlab:"))) {
+            && this.elem.getAttribute("data-uri")?.match("file://|inmemory://|gitlab:"))) {
+            if (parent === null) {
+                break;
+            }
             this.elem = parent;
             parent = parent.parentElement;
         }
-    }
-    static matches(e) {
-        let parent = e;
-        for (let i = 0; i < 4; ++i) {
-            if (parent !== undefined && parent !== null) {
-                if ((/monaco-editor/gi).test(parent.className)) {
-                    return true;
-                }
-                parent = parent.parentElement;
-            }
-        }
-        return false;
     }
 }
 // TextareaEditor sort of works for contentEditable elements but there should
@@ -415,7 +418,7 @@ export function executeInPage(code) {
             }
         })(${JSON.stringify(eventId)})`;
         window.addEventListener(eventId, ({ detail }) => {
-            script.parentNode.removeChild(script);
+            script.parentNode?.removeChild(script);
             if (detail.success) {
                 return resolve(detail.result);
             }

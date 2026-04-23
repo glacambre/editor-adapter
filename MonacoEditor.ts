@@ -4,7 +4,7 @@ import { GenericAbstractEditor, AbstractEditorOptions, wrapper, unwrapper } from
 export class MonacoEditor extends GenericAbstractEditor {
 
     static matches (e: HTMLElement) {
-        let parent = e;
+        let parent: HTMLElement | null = e;
         for (let i = 0; i < 4; ++i) {
             if (parent !== undefined && parent !== null) {
                 if ((/monaco-editor/gi).test(parent.className)) {
@@ -21,16 +21,19 @@ export class MonacoEditor extends GenericAbstractEditor {
         super(e, options);
         this.elem = e;
         // Find the monaco element that holds the data
-        let parent = this.elem.parentElement;
+        let parent: HTMLElement | null = this.elem.parentElement;
         while (!(this.elem.className.match(/monaco-editor/gi)
-                 && this.elem.getAttribute("data-uri").match("file://|inmemory://|gitlab:"))) {
+                 && this.elem.getAttribute("data-uri")?.match("file://|inmemory://|gitlab:"))) {
+            if (parent === null) {
+                break;
+            }
             this.elem = parent;
             parent = parent.parentElement;
         }
     }
 
     getContent = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
-        const elem = document.querySelector(selector);
+        const elem = document.querySelector(selector) as any;
         const uri = elem.getAttribute("data-uri");
         const model = unwrap(window).monaco.editor.getModel(uri);
         return wrap(model.getValue());
@@ -47,7 +50,7 @@ export class MonacoEditor extends GenericAbstractEditor {
     }
 
     getLanguage = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
-        const elem = document.querySelector(selector);
+        const elem = document.querySelector(selector) as any;
         const uri = elem.getAttribute("data-uri");
         const model = unwrap(window).monaco.editor.getModel(uri);
         return wrap(model.getModeId());
