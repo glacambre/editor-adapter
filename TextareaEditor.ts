@@ -96,7 +96,7 @@ export class TextareaEditor implements AbstractEditor {
     }
 
     setCursor = async (line: number, column: number) => {
-        return this.getContent().then(text => {
+        return this.getContent().then((text) : undefined => {
             let character = 0;
             // Try to find the line the cursor should be put on
             while (line > 1 && character < text.length) {
