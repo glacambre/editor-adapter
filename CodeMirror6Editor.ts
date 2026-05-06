@@ -64,7 +64,7 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
         const cm = elem.cmView || elem.cmTile;
         return wrap(cm.view.dispatch({
             selection: {
-                anchor: cm.view.doc.line(line) + column
+                anchor: cm.view.state.doc.line(line).from + column
             }
         }));
     }
