@@ -56,7 +56,7 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
 
     setCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper, line: number, column: number) => {
         const elem = unwrap(document.querySelector(selector) as any);
-        return wrap(elem.vmView.view.dispatch({
+        return wrap(elem.cmView.view.dispatch({
             selection: {
                 anchor: elem.cmView.view.doc.line(line) + column
             }
