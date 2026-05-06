@@ -29,16 +29,18 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
     }
 
     getContent = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
-        const elem = document.querySelector(selector);
-        return wrap(unwrap(elem).cmView.view.state.doc.toString());
+        const elem = unwrap(document.querySelector(selector) as any);
+        const cm = elem.cmView || elem.cmTile;
+        return wrap(cm.view.state.doc.toString());
     }
 
     getCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
-        const elem = document.querySelector(selector) as any;
-        const state = elem.cmView.view.state;
+        const elem = unwrap(document.querySelector(selector) as any);
+        const cm = elem.cmView || elem.cmTile;
+        const state = cm.view.state;
         const head = state.selection.main.head;
         const line = state.doc.lineAt(head);
-        return [line.number, head - line.from] as [number, number];
+        return wrap([line.number, head - line.from]) as [number, number];
     }
 
     getElement = () => {
@@ -52,15 +54,17 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
 
     setContent = async (selector: string, wrap: wrapper, unwrap: unwrapper, text: string) => {
         const elem = unwrap(document.querySelector(selector) as any);
-        let length = elem.cmView.view.state.doc.length;
-        return wrap(elem.cmView.view.dispatch({changes: {from: 0, to: length, insert: text}}));
+        const cm = elem.cmView || elem.cmTile;
+        let length = cm.view.state.doc.length;
+        return wrap(cm.view.dispatch({changes: {from: 0, to: length, insert: text}}));
     }
 
     setCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper, line: number, column: number) => {
         const elem = unwrap(document.querySelector(selector) as any);
-        return wrap(elem.cmView.view.dispatch({
+        const cm = elem.cmView || elem.cmTile;
+        return wrap(cm.view.dispatch({
             selection: {
-                anchor: elem.cmView.view.doc.line(line) + column
+                anchor: cm.view.doc.line(line) + column
             }
         }));
     }
