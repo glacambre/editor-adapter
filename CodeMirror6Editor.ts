@@ -35,8 +35,10 @@ export class CodeMirror6Editor extends GenericAbstractEditor {
 
     getCursor = async (selector: string, wrap: wrapper, unwrap: unwrapper) => {
         const elem = document.querySelector(selector) as any;
-        const position = unwrap(elem).cmView.view.state.selection.main.head;
-        return [wrap(position.line), wrap(position.ch)] as [number, number];
+        const state = elem.cmView.view.state;
+        const head = state.selection.main.head;
+        const line = state.doc.lineAt(head);
+        return [line.number, head - line.from] as [number, number];
     }
 
     getElement = () => {
